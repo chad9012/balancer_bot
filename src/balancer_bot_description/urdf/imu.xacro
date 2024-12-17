@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <!-- Define properties for IMU sensor dimensions -->
+    <xacro:property name="imu_length" value="0.02"/>
+    <xacro:property name="imu_width" value="0.02"/>
+    <xacro:property name="imu_height" value="0.01"/>
+
+    <!-- Xacro macro to define an IMU sensor -->
+    <xacro:macro name="imu_sensor" params="sensor_name link_xyz link_rpy">
+        <!-- Define the sensor link -->
+        <link name="${sensor_name}_link">
+            <visual>
+                <geometry>
+                    <box size="${imu_length} ${imu_width} ${imu_height}"/>
+                </geometry>
+                <material name="blue"/>
+            </visual>
+            <collision>
+                <geometry>
+                    <box size="${imu_length} ${imu_width} ${imu_height}"/>
+                </geometry>
+            </collision>
+            <inertial>
+                <mass value="0.05"/>
+                <origin xyz="0 0 0" rpy="0 0 0"/>
+                <inertia ixx="1e-5" ixy="0" ixz="0" iyy="1e-5" iyz="0" izz="1e-5"/>
+            </inertial>
+        </link>
+
+        <!-- Define the joint attaching the sensor to the robot -->
+        <joint name="base_${sensor_name}_joint" type="fixed">
+            <parent link="base_link"/>  <!-- Adjust the parent link as necessary -->
+            <child link="${sensor_name}_link"/>
+            <origin xyz="${link_xyz}" rpy="${link_rpy}"/>
+        </joint>
+
+        <!-- Gazebo plugin for the IMU sensor -->
+        <gazebo reference="${sensor_name}_link">
+            <sensor name="${sensor_name}" type="imu">
+                <always_on>true</always_on>
+                <update_rate>100</update_rate>
+                <imu>
+                    <topic>${sensor_name}_data</topic>
+                    <frame_name>${sensor_name}_link</frame_name>
+                </imu>
+                <plugin name="${sensor_name}_plugin" filename="libgazebo_ros_imu_sensor.so">
+                    <ros>
+                        <namespace>/</namespace>
+                        <remapping>~/imu:=/${sensor_name}_data</remapping>
+                    </ros>
+                    <body_name>${sensor_name}_link</body_name>
+                </plugin>
+            </sensor>
+        </gazebo>
+    </xacro:macro>
+
+    <!-- Instantiate the IMU sensor -->
+    <xacro:imu_sensor sensor_name="imu_sensor" link_xyz="0 0 ${base_height+imu_height/2.0}" link_rpy="0 0 0"/>
+
+</robot>
